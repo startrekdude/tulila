@@ -1,0 +1,28 @@
+{
+	name: "Welcome to Tulila",
+	category: "Tutorial",
+	description: "01-welcome.md",
+	time_limit: 1,
+	cpu_time_limit: 0.25,
+	graph_size: 4,
+	solution: "i am ready to continue",
+	agents: [
+		{
+			name: "empty",
+			code: "empty.py",
+			visible: false,
+		},
+		{
+			name: "user",
+		},
+	],
+	networks: [
+		{
+			name: "public",
+			members: ["empty", "user"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+		},
+	],
+}

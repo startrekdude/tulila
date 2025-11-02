@@ -1,0 +1,3 @@
+[flake8]
+exclude=.mypy_cache,venv
+select=F401,PEA001

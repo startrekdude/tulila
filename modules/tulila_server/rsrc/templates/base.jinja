@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+{% macro make_backlink(href, text) %}
+(go back <a href="{{ href }}">{{ text|e }}</a>)
+{% endmacro %}
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{% block title %}{% endblock %}</title>
+        <link href="/style.css" rel="stylesheet">
+		<link href="/favicon.png" rel="icon" type="image/png">
+    </head>
+    <body>
+		<header>
+			<picture>
+				<source type="image/jxl" srcset="/banner/100x.jxl, /banner/150x.jxl 1.5x, /banner/200x.jxl 2x, /banner/375x.jxl 3.75x">
+				<source type="image/webp"
+					srcset="/banner/100x.webp, /banner/150x.webp 1.5x, /banner/200x.webp 2x, /banner/250x.webp 2.5x, /banner/375x.webp 3.75x">
+				<source srcset="/banner/100x.png, /banner/150x.png 1.5x, /banner/200x.png 2x, /banner/375x.png 3.75x">
+				<img width="800" height="133" src="/banner/100x.png"
+				alt="Illustration of a witch with white hair wearing a black hat and holding a wand, next to the stylized purple text 'Tulila!'">
+			</picture>
+			</img>
+			<div class="three-column">
+				<div>➔ {% block name %}{% endblock %}</div>
+				<div>{% block backlink %}{% endblock %}</div>
+				<div>
+					{% if request.path != "/login" %}
+						<form action="/logout" method="POST">
+							<input type="hidden" name="return_to" value="{{ request.path_qs }}">
+							<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+							<input class="action-link" type="submit" value="Logout">
+						</form>
+					{% endif %}
+				</div>
+			</div>
+            <hr>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>

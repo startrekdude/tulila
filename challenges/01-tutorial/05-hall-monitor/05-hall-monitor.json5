@@ -1,0 +1,38 @@
+{
+	name: "Do you have a hall pass?",
+	short_name: "Hall Monitor",
+	category: "Tutorial",
+	description: "05-hall-monitor.md",
+	time_limit: 2,
+	cpu_time_limit: 0.25,
+	agents: [
+		{
+			name: "neville",
+			code: "neville.py",
+			may_set_solution: true,
+			show_code: true,
+		},
+		{
+			name: "fred",
+			code: "fred.py",
+			show_code: true,
+		},
+		{
+			name: "george",
+			code: "george.py",
+			show_code: true,
+		},
+		{
+			name: "percy",
+		},
+	],
+	networks: [
+		{
+			name: "hogwarts",
+			members: ["neville", "fred", "george", "percy"],
+			monitors: ["percy"],
+			interceptors: [],
+			spoofers: [],
+		},
+	],
+}

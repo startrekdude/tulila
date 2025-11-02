@@ -1,0 +1,32 @@
+{
+	name: "Top Gun",
+	category: "Tutorial",
+	description: "07-top-gun.md",
+	time_limit: 3,
+	cpu_time_limit: 0.25,
+	template: "patroclus.py",
+	agents: [
+		{
+			name: "paris",
+			code: "paris.py",
+			may_set_solution: true,
+		},
+		{
+			name: "hector",
+			code: "hector.py",
+			show_code: true,
+		},
+		{
+			name: "patroclus",
+		},
+	],
+	networks: [
+		{
+			name: "carrier-parrot",
+			members: ["patroclus", "paris", "hector"],
+			monitors: [],
+			interceptors: ["patroclus"],
+			spoofers: ["patroclus"],
+		},
+	],
+}

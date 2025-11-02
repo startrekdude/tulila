@@ -1,0 +1,44 @@
+{
+	name: "Bit Flipping Attack on CBC Mode",
+	short_name: "CBC Bit Flip",
+	category: "Cryptography",
+	description: "03-cbc-bit-flip.md",
+	time_limit: 2,
+	cpu_time_limit: 0.25,
+	template: "mallory.py",
+	agents: [
+		{
+			name: "raven-pay",
+			code: "raven-pay.py",
+			deps: ["PyCryptodome"],
+			may_set_solution: true,
+			show_code: true,
+		},
+		{
+			name: "audrey",
+			code: "audrey.py",
+			deps: ["PyCryptodome"],
+			show_code: true,
+		},
+		{
+			name: "mallory",
+		},
+	],
+	networks: [
+		{
+			name: "herzberg",
+			members: ["raven-pay", "audrey", "mallory"],
+			monitors: [],
+			interceptors: ["mallory"],
+			spoofers: ["mallory"],
+		},
+		{
+			name: "challenge_init",
+			members: ["raven-pay", "audrey"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+			visible: false,
+		},
+	],
+}

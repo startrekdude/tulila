@@ -1,0 +1,37 @@
+{
+	name: "Mistaken Identity",
+	category: "Tutorial",
+	description: "06-mistaken-identity.md",
+	time_limit: 2,
+	cpu_time_limit: 0.25,
+	agents: [
+		{
+			name: "bank",
+			code: "bank.py",
+			may_set_solution: true,
+			show_code: true,
+		},
+		{
+			name: "mark",
+			code: "mark.py",
+			show_code: true,
+		},
+		{
+			name: "alice",
+			code: "alice.py",
+			show_code: true,
+		},
+		{
+			name: "chuck",
+		},
+	],
+	networks: [
+		{
+			name: "internet",
+			members: ["chuck", "bank", "mark", "alice"],
+			monitors: ["chuck"],
+			interceptors: [],
+			spoofers: ["chuck"],
+		},
+	],
+}

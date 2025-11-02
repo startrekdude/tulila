@@ -1,0 +1,45 @@
+{
+	name: "Postal Pigeon",
+	category: "Tutorial",
+	description: "04-postal-pigeon.md",
+	time_limit: 2,
+	cpu_time_limit: 0.25,
+	agents: [
+		{
+			name: "alice",
+			code: "alice.py",
+		},
+		{
+			name: "bob",
+			code: "bob.py",
+			may_set_solution: true,
+		},
+		{
+			name: "pigeon",
+		},
+	],
+	networks: [
+		{
+			name: "herzberg",
+			members: ["alice", "pigeon"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+		},
+		{
+			name: "minto",
+			members: ["bob", "pigeon"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+		},
+		{
+			name: "secret_back_channel",
+			members: ["bob", "alice"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+			visible: false,
+		},
+	],
+}

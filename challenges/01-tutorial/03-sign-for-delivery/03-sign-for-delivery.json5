@@ -1,0 +1,28 @@
+{
+	name: "Sign for Delivery",
+	category: "Tutorial",
+	description: "03-sign-for-delivery.md",
+	time_limit: 1,
+	cpu_time_limit: 0.25,
+	graph_size: 4,
+	agents: [
+		{
+			name: "mr_roboto",
+			code: "mr_roboto.py",
+			show_code: true,
+			may_set_solution: true,
+		},
+		{
+			name: "user",
+		},
+	],
+	networks: [
+		{
+			name: "public",
+			members: ["user", "mr_roboto"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+		},
+	],
+}

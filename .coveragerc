@@ -1,0 +1,8 @@
+[run]
+branch = True
+command_line = dev-scripts/simulator-cov.py
+source = tulila._simulation
+
+[report]
+exclude_also =
+  if TYPE_CHECKING:

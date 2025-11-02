@@ -1,0 +1,72 @@
+{% extends "base.jinja" %}
+{% block title %}{{ challenge.short_name|e }}{% endblock %}
+{% block name %}Challenge: <em>&#8220;{{ challenge.short_name|e }}&#8221;</em>{% endblock %}
+{% block backlink %}{{ make_backlink("/", "home") }}{% endblock %}
+
+{% block content %}
+<h1>{{ challenge.name|e }}</h1>
+{{ challenge.description_html }}
+{% if challenge.networks|length == 1 %}
+	<h2>Network</h2>
+{% else %}
+	<h2>Networks</h2>
+{% endif %}
+{{ graph_svg }}
+{% if other_agents %}
+	<h2>Agent Code</h2>
+	{% if other_agents|length != (challenge.agents|length - 1) %}
+		<em>Some agents are hidden.</em>
+	{% endif %}
+	{% for other_agent in other_agents %}
+		<details>
+			<summary>{{ other_agent.name }}</summary>
+			{{ other_agent.code_html.replace(' style="background: #ffffff"', "") }}
+		</details>
+	{% endfor %}
+{% endif %}
+<h2>Submissions</h2>
+{% if submissions|length == 0 %}
+	You have made no submissions to this challenge.<br>
+{% elif submissions|length == 1%}
+	You have made 1 submission to this challenge.
+{% elif submissions|length >= 5 %}
+	You have made many submissions to this challenge. You may review your most recent, and highest-scoring, submissions.
+{% else %}
+	You have made {{ submissions|length }} submissions to this challenge.
+{% endif %}
+{% if submissions %}
+	<ol>
+	{% for submission in submissions %}
+		<li>
+			Your
+			<a href="/challenge/{{ challenge.id }}/submission/{{ submission.id.hex }}">
+				<strong>{{ submission.queued_at.astimezone().strftime("%Y-%m-%d %H:%M:%S") }}</strong>
+				submission</a>,
+			{% if submission.__class__.__name__ == "Submission" %}
+				{% if not submission.internal_error %}
+					with a score of <small><sup>{{ submission.score|round(6) }}</sup>/<sub>1.0</sub></small>.
+				{% else %}
+					which failed due to an internal error.
+				{% endif %}
+			{% else %}
+				not yet evaluated.
+			{% endif %}
+		</li>
+	{% endfor %}
+	</ol>
+{% endif %}
+<strong>Make a new submission:</strong>
+<div id="editor"></div>
+<button id="submit">Submit!</button>
+<button id="load-from-file">Load from file</button>
+<script>
+	window.data = {
+		csrfToken: {{ csrf_token|tojson }},
+		{% if challenge.template %}
+			template: {{ challenge.template|tojson }},
+		{% endif %}
+	};
+</script>
+<script src="/ace/ace.js"></script>
+<script src="/challenge.js"></script>
+{% endblock %}

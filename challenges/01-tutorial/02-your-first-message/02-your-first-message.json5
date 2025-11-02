@@ -1,0 +1,29 @@
+{
+	name: "Your First Message",
+	short_name: "Your 1ˢᵗ Message",
+	category: "Tutorial",
+	description: "02-your-first-message.md",
+	time_limit: 1,
+	cpu_time_limit: 0.25,
+	graph_size: 4,
+	agents: [
+		{
+			name: "sean",
+			code: "sean.py",
+			show_code: true,
+			may_set_solution: true,
+		},
+		{
+			name: "user",
+		},
+	],
+	networks: [
+		{
+			name: "public",
+			members: ["sean", "user"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+		},
+	],
+}

@@ -1,0 +1,19 @@
+#!/bin/sh
+_SHELL_SCRIPT="""
+"
+if [ "$(id -u -n)" != "tulila" ] ; then
+  echo 'Tulila Server must be run as the "tulila" user.' >&2
+  echo 'Maybe try "systemctl start tulila" instead?' >&2
+  exit 1
+fi
+
+tulila_root=$(dirname "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)")
+PYTHONPATH=$PYTHONPATH:$tulila_root/modules \
+ PYTHONDONTWRITEBYTECODE=1 \
+ exec $tulila_root/venv/bin/python3 $tulila_root/bin/tulila-server "$@"
+exit 1
+"""
+
+import tulila_server
+
+tulila_server.start()

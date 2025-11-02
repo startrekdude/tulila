@@ -1,0 +1,45 @@
+{
+	name: "Diffie-Hellman Machine-in-the-Middle",
+	short_name: "DH MITM",
+	category: "Cryptography",
+	description: "01-dh-mitm.md",
+	time_limit: 3,
+	cpu_time_limit: 0.5,
+	template: "mallory.py",
+	agents: [
+		{
+			name: "alice",
+			deps: ["PyCryptodome"],
+			code: "alice.py",
+			may_set_solution: true,
+			show_code: true,
+		},
+		{
+			name: "bob",
+			deps: ["PyCryptodome"],
+			code: "bob.py",
+			show_code: true,
+		},
+		{
+			name: "mallory",
+			deps: ["PyCryptodome"],
+		},
+	],
+	networks: [
+		{
+			name: "internet",
+			members: ["alice", "bob", "mallory"],
+			monitors: [],
+			interceptors: ["mallory"],
+			spoofers: ["mallory"],
+		},
+		{
+			name: "challenge_init",
+			members: ["alice", "bob"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+			visible: false,
+		},
+	],
+}

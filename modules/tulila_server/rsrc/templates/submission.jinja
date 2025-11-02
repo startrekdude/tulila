@@ -1,0 +1,113 @@
+{% extends "base.jinja" %}
+{% block title %}Submission to {{ challenge.short_name|e }}{% endblock %}
+{% block name %}Your submission to <em>&#8220;{{ challenge.short_name|e }}&#8221;</em>{% endblock %}
+{% block backlink %}{{ make_backlink("/challenge/{}".format(challenge.id), "to " + challenge.short_name) }}{% endblock %}
+
+{% block content %}
+<h1>Submission to <em>&#8220;{{ challenge.name|e }}&#8221;</em></h1>
+{% if not pending %}
+	<p>
+		{% if submission.internal_error %}
+			<span class="badge negative">Internal Error</span>
+		{% elif submission.score == 1 %}
+			<span class="badge positive">Success</span>
+		{% elif submission.score == 0 %}
+			<span class="badge negative">Failure</span>
+		{% else %}
+			<span class="badge mixed">Partial Success</span>
+		{% endif %}
+	</p>
+{% endif %}
+<table>
+	<tbody>
+		{% if not pending %}
+			<tr>
+				<td>
+					<strong>SCORE</strong>
+				</td>
+				<td>
+					{% if not submission.internal_error %}
+						<sup>{{ submission.score|round(6) }}</sup>/<sub>1.0</sub>
+					{% else %}
+						UNKNOWN
+					{% endif %}
+				</td>
+			</tr>
+		{% endif %}
+		<tr>
+			<td>
+				<strong>Queued at</strong>
+			</td>
+			<td>{{ submission.queued_at.astimezone().strftime("%Y-%m-%d %H:%M:%S") }}</td>
+		</tr>
+		{% if pending and started_at %}
+			<tr>
+				<td>
+					<strong>Started at</strong>
+				</td>
+				<td>{{ started_at.astimezone().strftime("%Y-%m-%d %H:%M:%S") }}</td>
+			</tr>
+		{% endif %}
+		{% if not pending %}
+			<tr>
+				<td>
+					<strong>Started at</strong>
+				</td>
+				<td>{{ submission.started_at.astimezone().strftime("%Y-%m-%d %H:%M:%S") }}</td>
+			</tr>
+			<tr>
+				<td>
+					<strong>Finished at</strong>
+				</td>
+				<td>{{ submission.finished_at.astimezone().strftime("%Y-%m-%d %H:%M:%S") }}</td>
+			</tr>
+			{% if not submission.internal_error %}
+				<tr>
+					<td>
+						<strong>Exit reason</strong>
+					</td>
+					<td>{{ submission.exit_reason.name }}</td>
+				</tr>
+				<tr>
+					<td>
+						<strong>Time</strong>
+					</td>
+					<td>{{ submission.time|round(6) }} s</td>
+				</tr>
+				<tr>
+					<td>
+						<strong>CPU time</strong>
+					</td>
+					<td>≈ {{ submission.approximate_cpu_time|round(6) }} s</td>
+				</tr>
+			{% endif %}
+		{% endif %}
+	</tbody>
+</table>
+<h2>Log</h2>
+{% if pending %}
+	<span id="connection-status" class="badge negative">Disconnected</span><br>
+	Log messages will appear below, e.g. if your code <samp>print()</samp>s something.
+	<pre id="log"></pre>
+{% else %}
+	{% if submission.did_truncate %}
+		<p>The log was too long, so some messages were removed.</p>
+	{% endif %}
+	{% if submission.log %}
+<pre id="log">
+{%- set warning_fmt = '<span class="warning">WARNING: </span><span class="diagnostic">{}</span>' -%}
+{% for line in submission.log -%}
+{%- set content = line.line|e if not line.is_diagnostic else warning_fmt.format(line.line|e) -%}
+{{ "[{0:06f}] ".format(line.timestamp) }}<span class="agent-name">{{ line.agent_name|e }}: </span>{{ content }}
+{% endfor -%}
+	{% else %}
+		<p>No log messages.</p>
+	{% endif %}
+</pre>
+{% endif %}
+<h2>Code</h2>
+{{ code_html }}
+{% if pending %}
+<script src="/live-submission.js"></script>
+{% endif %}
+{% endblock %}

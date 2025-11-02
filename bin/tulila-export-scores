@@ -1,0 +1,29 @@
+#!/bin/sh
+_SHELL_SCRIPT="""
+"
+tulila_root=$(dirname "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)")
+
+if [ "$(id -u -n)" != "tulila" ] ; then
+  exec pkexec -u tulila $tulila_root/bin/tulila-export-scores "$@"
+fi
+
+if systemctl is-active -q tulila ; then
+  echo 'You may not export scores while Tulila is running.' >&2
+  echo 'Maybe try "systemctl stop tulila"?' >&2
+  exit 1
+fi
+
+PYTHONPATH=$PYTHONPATH:$tulila_root/modules \
+ PYTHONDONTWRITEBYTECODE=1 \
+ exec $tulila_root/venv/bin/python3 $tulila_root/bin/tulila-export-scores "$@"
+
+exit 1
+"""
+
+from os import environ
+
+environ["TULILA_SERVER_CHALLENGE_PATH"] = "unused"
+
+import tulila_server
+
+tulila_server.export_scores()

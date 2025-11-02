@@ -1,0 +1,89 @@
+#!/bin/sh
+_SHELL_SCRIPT="""
+"
+tulila_root=$(dirname "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)")
+
+if [ "$(id -u -n)" != "tulila" ] ; then
+  exec pkexec -u tulila $tulila_root/bin/tulila-reset "$@"
+fi
+
+if systemctl is-active -q tulila ; then
+  echo 'You may not reset Tulila while it is running.' >&2
+  echo 'Maybe try "systemctl stop tulila"?' >&2
+  exit 1
+fi
+
+PYTHONPATH=$PYTHONPATH:$tulila_root/modules \
+ PYTHONDONTWRITEBYTECODE=1 \
+ exec $tulila_root/venv/bin/python3 $tulila_root/bin/tulila-reset "$@"
+
+exit 1
+
+Reset Tulila.
+
+This script resets an install of Tulila to the proverbial "factory settings."
+
+All users, submissions, and scores will be removed. This is useful to, e.g.,
+clean up Tulila after a semester (once the scores are exported!) and prepare
+it for a new group of students.
+
+Resetting Tulila is also required to remove challenges once they have been
+assigned an ID. Removing challenges is not otherwise permitted as they may
+be referenced in database records (such as, e.g., submissions).
+
+Implementation wise, this script simply deletes everything in the home
+directory (after asking for interactive confirmation). It checks to see if
+it is running as the "tulila" user before acting (as it's otherwise quite
+dangerous...).
+"""
+
+import os.path
+
+from argparse import ArgumentParser
+from os import getuid, listdir, remove
+from os.path import expanduser, isdir, isfile
+from pwd import getpwuid
+from shutil import rmtree
+from textwrap import dedent
+
+
+def main():
+	"""Ask for interactive confirmation, then reset Tulila.
+	
+	The check for interactive confirmation will be bypassed if -y is passed
+	on the command line.
+	"""
+	if getpwuid(getuid()).pw_name != "tulila":
+		print('This script must be run as "tulila"---it is ABSOLUTELY NOT SAFE')
+		print("to run as any other user (tt deletes everything in ~).")
+		return
+	
+	parser = ArgumentParser(description="Reset Tulila.")
+	parser.add_argument("-y", dest="yes", help="do not require interactive confirmation", action="store_true")
+	args = parser.parse_args()
+	
+	if not args.yes:
+		guard = input(dedent("""\
+			Resetting Tulila will PERMANENTLY DELETE all stored state.
+			  - All users will be PERMANENTLY DELETED.
+			  - All submissions will be PERMANENTLY DELETED.
+			  - All scores will be PERMANENTLY DELETED.
+			If you would like to continue, type "tulila-reset" exactly at the prompt:
+		""").strip() + " ")
+		if guard != "tulila-reset":
+			print("Aborting...")
+			return
+	
+	root = expanduser("~")
+	for name in listdir(root):
+		path = os.path.join(root, name)
+		if isfile(path):
+			remove(path)
+		elif isdir(path):
+			rmtree(path)
+	
+	print("Tulila has been reset.")
+
+
+if __name__ == "__main__":
+	main()

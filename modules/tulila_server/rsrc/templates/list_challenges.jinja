@@ -1,0 +1,30 @@
+{% extends "base.jinja" %}
+{% block title %}Challenge List{% endblock %}
+{% block name %}Challenge List{% endblock %}
+{% block backlink %}&nbsp;{% endblock %}
+
+{% block content %}
+{% for category in challenges.categories %}
+	<section>
+		<h2>{{ category|e }}</h2>
+		<ol>
+		{% for challenge in challenges.by_category[category] %}
+			<li>
+				<a href="/challenge/{{ challenge.id }}">{{ challenge.name|e }}</a>
+				{% if challenge.id in high_scores %}
+					{% set score = high_scores[challenge.id] %}
+					{% if score == 1 %}
+						✅
+					{% elif score == 0 %}
+						❌
+					{% else %}
+						⚠️
+					{% endif %}
+					<sup>{{ score|round(6) }}</sup>/<sub>1.0</sub>
+				{% endif %}
+			</li>
+		{% endfor%}
+		</ol>
+	</section>
+{% endfor %}
+{% endblock %}

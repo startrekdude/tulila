@@ -1,0 +1,48 @@
+{
+	name: "CRIME",
+	category: "Cryptography",
+	description: "02-crime.md",
+	time_limit: 3,
+	cpu_time_limit: 1.5,
+	template: "mallory.py",
+	agents: [
+		{
+			name: "umberto",
+			deps: ["PyCryptodome"],
+			code: "umberto.py",
+			may_set_solution: true,
+			show_code: true,
+		},
+		{
+			name: "bank",
+			deps: ["PyCryptodome"],
+			code: "bank.py",
+			show_code: true,
+		},
+		{
+			name: "cnn",
+			code: "cnn.py",
+			show_code: true,
+		},
+		{
+			name: "mallory",
+		},
+	],
+	networks: [
+		{
+			name: "internet",
+			members: ["umberto", "cnn", "bank", "mallory"],
+			monitors: [],
+			interceptors: ["mallory"],
+			spoofers: ["mallory"],
+		},
+		{
+			name: "challenge_init",
+			members: ["umberto", "bank"],
+			monitors: [],
+			interceptors: [],
+			spoofers: [],
+			visible: false,
+		},
+	],
+}

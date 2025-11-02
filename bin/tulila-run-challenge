@@ -1,0 +1,193 @@
+#!/bin/sh
+_SHELL_SCRIPT="""
+"
+tulila_root=$(dirname "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)")
+PYTHONPATH=$PYTHONPATH:$tulila_root/modules \
+ PYTHONDONTWRITEBYTECODE=1 \
+ exec $tulila_root/venv/bin/python3 $tulila_root/bin/tulila-run-challenge "$@"
+exit 1
+
+I do hope you'll excuse my bash/python polyglot here - it's the easiest way to
+get the environment set up right for a standalone script. You'll be seeing it
+quite a bit in the bin/ directory :).
+
+This is the standalone Tulila challenge runner. It accepts as input:
+  1. The path to the .json5 challenge definition file.
+  2. The path to a .py script to use as the challenge solution.
+  3. Optionally, the --trace flag to enable more event types.
+...and runs the challenge, with the solution, printing events & the result to
+the console.
+
+The primary audience of this script is challenge authors; it can be used to
+debug challenges before their inclusion in Tulila Server. This script is not
+suited for use by challenge recipients as they presumably don't have shell
+access...
+"""
+
+import asyncio
+
+from argparse import ArgumentParser
+from asyncio import create_task, CancelledError, Queue, FIRST_COMPLETED
+from collections import defaultdict
+from contextlib import suppress
+
+import tulila
+
+from termcolor import colored, cprint
+from tulila import (
+	DebugPrint,
+	Diagnostic,
+	ExitReason,
+	InterceptDrop,
+	InterceptModify,
+	Receive,
+	Send,
+	SetSolutions,
+	Solve,
+)
+
+
+def print_message(message):
+	"""Pretty-print a Message object to the console."""
+	print("from ", end="")
+	cprint(message.sender, "light_magenta", end="")
+	print(" to ", end="")
+	cprint(message.recipient, "light_magenta", end="")
+	print(" over ", end="")
+	cprint(message.network, "yellow", end="")
+	print(", ", end="")
+	cprint(message.data, attrs=["bold"])
+
+
+def print_event(event, longest_agent_name):
+	"""Pretty-print an event to the console.
+	
+	Special care is taken to make the messages included in DebugPrint and Diagnostic events
+	line up vertically, even if the corresponding agent names are of different lengths; the
+	longest_agent_name parameter helps with this.
+	
+	As a convention, agent names are printed in light magenta and network names are printed
+	in "yellow" (which may come out as orange, depending on the terminal configuration).
+	
+	More important data tends to be printed in bold.
+	"""
+	timestamp, event = event
+	cprint(f"[{timestamp:.06f}] ", end="")
+	
+	if   isinstance(event, DebugPrint):
+		cprint(event.agent_name.rjust(longest_agent_name) + ": ", "light_magenta", end="")
+		cprint(event.line, attrs=["bold"])
+		return
+	elif isinstance(event, Diagnostic):
+		cprint(event.agent_name.rjust(longest_agent_name) + ": ", "light_magenta", end="")
+		cprint("WARNING: ", "red", attrs=["bold"], end="")
+		cprint(event.warning, "red")
+		return
+	
+	cprint(event.agent_name, "light_magenta", end="")
+	if   isinstance(event, Send):
+		cprint(" sends a message: ", end="")
+		print_message(event.message)
+	elif isinstance(event, Receive):
+		cprint(" receives a message: ", end="")
+		print_message(event.message)
+	elif isinstance(event, InterceptModify):
+		cprint(" modifies an intercepted message: ", end="")
+		print_message(event.message)
+	elif isinstance(event, InterceptDrop):
+		cprint(" drops an intercepted message on network ", end="")
+		cprint(event.network_name, "yellow")
+	elif isinstance(event, Solve):
+		if event.successful:
+			cprint(" solves", "green" if event.score == 1 else "yellow", attrs=["bold"], end="")
+			print(" the challenge with a score of ", end="")
+			cprint(event.score, attrs=["bold"], end="")
+			print(": ", end="")
+			cprint(repr(event.s), attrs=["bold"])
+		else:
+			cprint(" fails", "red", attrs=["bold"], end="")
+			print(" to solve the challenge: ", end="")
+			cprint(repr(event.s), attrs=["bold"])
+	elif isinstance(event, SetSolutions):
+		cprint(" adds or removes solutions: ", end="")
+		cprint(event.solutions, attrs=["bold"])
+
+
+EXIT_REASONS = {
+	ExitReason.AGENT_FINISHED          : colored("an agent finished.", attrs=["bold"]),
+	ExitReason.SOLVED                  : colored("solved.", "green", attrs=["bold"]),
+	ExitReason.EXCEEDED_REAL_TIME_LIMIT: colored("ran out of time.", "red", attrs=["bold"]),
+	ExitReason.EXCEEDED_CPU_TIME_LIMIT : colored("ran out of CPU time.", "red", attrs=["bold"]),
+}
+
+def print_result(result):
+	"""Pretty-print the result of a simulation."""
+	print()
+	cprint("SIMULATION COMPLETE --", attrs=["bold"])
+	print("  exited because " + EXIT_REASONS[result.exit_reason])
+	print("  final score: ", end="")
+	cprint(
+		f"{result.score}",
+		defaultdict(lambda: "yellow", {1: "green", 0: "red"})[result.score],
+		attrs=["bold"]
+	)
+	print("  real time: ", end="")
+	cprint(f"{round(result.time, 6)}s", attrs=["bold"])
+	print("  approximate CPU time: ", end="")
+	cprint(f"{round(result.approximate_cpu_time, 6)}s", attrs=["bold"])
+
+
+async def run_challenge(chal, solution, trace):
+	"""Run a Tulila challenge and print the events and result."""
+	queue = Queue()
+	# Needed by print_event for aesthetically pleasing alignment
+	longest_agent_name = max(len(agent.name) for agent in chal.agents)
+	
+	# Always have the overall "done" task and a task to read the next event from the queue
+	# The event_task will be re-started as necessary
+	done_task  = create_task(chal.launch(solution, event_queue=queue, trace=trace))
+	event_task = create_task(queue.get())
+	
+	while True:
+		done, _ = await asyncio.wait([done_task, event_task], return_when=FIRST_COMPLETED)
+		for task in done:
+			if task is event_task:
+				print_event(await event_task, longest_agent_name)
+				event_task = create_task(queue.get())
+			
+			if task is done_task:
+				print_result(await done_task)
+				
+				event_task.cancel()
+				with suppress(CancelledError):
+					await event_task
+				
+				return
+
+
+def main():
+	"""Run a Tulila challenge and print the events and result.
+	
+	As the entry-point of the script, this function also has the responsibility of
+	parsing and validating the command-line arguments and loading the challenge
+	definition and solution from disk.
+	
+	No particular care is taken to validate that the specified challenge definition
+	file or solution file actually exist; as a regular user of scripts, I find it
+	optimal to just see the exception - lets me know exactly what went wrong & why.
+	"""
+	parser = ArgumentParser(description="Run a Tulila challenge.")
+	parser.add_argument("challenge", help="path to the .json5 challenge to run")
+	parser.add_argument("solution", help="path to the .py script to use as the challenge solution")
+	parser.add_argument("--trace", help="enable trace mode (display more events)", action="store_true")
+	args = parser.parse_args()
+	
+	chal = tulila.load_challenge(args.challenge)
+	with open(args.solution) as f:
+		solution = f.read()
+	
+	asyncio.run(run_challenge(chal, solution, args.trace))
+
+
+if __name__ == "__main__":
+	main()
